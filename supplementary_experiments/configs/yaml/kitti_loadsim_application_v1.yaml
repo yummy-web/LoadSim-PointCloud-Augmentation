@@ -1,0 +1,99 @@
+# =============================================================================
+# LOADSIM application contract for A4 (SemanticKITTI sequence 00).
+#
+# Purpose:
+#   This file is the focused "LSDA -> KITTI application contract". It states,
+#   in one place, what applying LoadSim (loading-simulation data augmentation)
+#   to SemanticKITTI sequence 00 means semantically, and how that application
+#   depends on the raw label mapping and on the frame cache v2 rebuild.
+#
+# Relationship to configs/kitti_v1.yaml:
+#   - configs/kitti_v1.yaml (version a4-kitti-v3) is the AUTHORITATIVE, full A4
+#     experiment contract (dataset / preprocessing / all methods / evaluation /
+#     debug). It is validated field-by-field by a4_train.py.
+#   - THIS file does NOT replace it and MUST NOT contradict it. It restates only
+#     the subset relevant to the LOADSIM application, so reviewers can read the
+#     LoadSim semantics and their cache/label-mapping dependency without paging
+#     through the whole experiment contract. Every value here is copied verbatim
+#     from kitti_v1.yaml / a4_train.py; on any conflict, a4_train.py and
+#     kitti_v1.yaml win.
+#   - This file is NOT loaded by a4_train.py. It is documentation-as-config; the
+#     executable path stays kitti_v1.yaml + configs/A4_*.json.
+#
+# Runtime / model values:
+#   Training and model runtime values (epochs, batch_size, optimizer, lr,
+#   scheduler, num_points, max_updates_U, num_classes, use_normals, device)
+#   come from configs/A4_*.json (schema lsda-revision-v2-run-v2). They are NOT
+#   defined here. See A4_LOADSIM_s1.json / _s2 / _s3 for the three seeds.
+# =============================================================================
+version: a4-kitti-loadsim-application-v1
+experiment: A4_SemanticKITTI
+applies_to_methods: [LOADSIM]
+authoritative_contract: configs/kitti_v1.yaml       # version a4-kitti-v3
+runtime_source: configs/A4_LOADSIM_s{1,2,3}.json    # lsda-revision-v2-run-v2
+entrypoint: a4_train.py
+
+# --- Label mapping (restated verbatim from kitti_v1.yaml dataset.label_mapping
+#     and a4_train.py LABEL_MAPPING_* / *_SEMANTIC_IDS constants) --------------
+label_mapping:
+  version: semantickitti-raw-ground-v1
+  source: SemanticKITTI official raw semantic IDs (.label low 16 bits)
+  output_values: [0, 1, 255]
+  ground_semantic_ids: [40, 44, 48, 49, 60, 72]        # -> binary label 1
+  ignore_semantic_ids: [0, 1]                          # -> 255, excluded pre-sampling
+  non_ground_rule: all_other_valid_raw_semantic_ids    # -> binary label 0
+  valid_raw_semantic_ids: [0, 1, 10, 11, 13, 15, 16, 18, 20, 30, 31, 32, 40, 44, 48, 49, 50, 51, 52, 60, 70, 71, 72, 80, 81, 99, 252, 253, 254, 255, 256, 257, 258, 259]
+
+# --- Frame cache dependency (restated from a4_train.py CACHE_SCHEMA) ----------
+cache:
+  schema: a4-frame-cache-v2-raw-label-mapping
+  rebuild_required: true
+  note: >-
+    Cache v2 embeds the semantickitti-raw-ground-v1 label mapping in every
+    per-frame .npz metadata block. Any cache built under an older mapping is
+    rejected by validate_cached_frame(); it must be rebuilt from raw frames.
+
+# --- LOADSIM application block ------------------------------------------------
+# All values here are copied verbatim from kitti_v1.yaml methods.LOADSIM and are
+# enforced by a4_train.py validate_semantic_contract() / loadsim_transform().
+loadsim_application:
+  train_transform: loadsim
+  applies_to: train_only        # val/test are always raw, unaugmented frames
+  online_augmentation: false
+  # Strict binary ground-only mask: only points whose binary label == 1 may be
+  # moved or removed; non-ground rows are preserved byte-for-byte.
+  class_mask:
+    source: binary_ground_label
+    value: 1
+    strict: true
+  n_ops: [2, 4]
+  front_alpha: [0.15, 0.25]
+  bucket_width_m: [0.8, 1.5]
+  collapse_dz_m: [0.03, 0.10]
+  collapse_dx_m: [0.02, 0.06]
+  surface_noise:
+    enabled: true
+    axis: z
+    sigma_m: 0.02
+    clip_m: 0.05
+  # Smoothing is disabled in the formal adapter; no unmasked global operation
+  # is allowed after the ground-only physical transform.
+  smoothing:
+    enabled: false
+
+# --- Fail-closed run constraints ---------------------------------------------
+fail_closed:
+  run_only_when:
+    - Real SemanticKITTI sequence 00 data root is mounted with
+      velodyne/ (4541 *.bin) and labels/ (4541 *.label), located by
+      a4_train.locate_sequence_dir().
+    - Frame cache v2 (schema a4-frame-cache-v2-raw-label-mapping) has been
+      (re)built under the semantickitti-raw-ground-v1 mapping and passes
+      validate_cached_frame().
+  forbidden:
+    - CPU fallback (require_cuda() raises A4Error if CUDA is unavailable).
+    - Reusing any stale or cross-run cache (fingerprint / schema / label-mapping
+      mismatch is rejected).
+    - Simulated, synthetic, or fixed-model-reuse data of any kind.
+    - Old checkpoints, metrics, or caches from a different mapping.
+

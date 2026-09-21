@@ -1,0 +1,53 @@
+{
+  "schema_version": "a3mb-run-config-v1",
+  "run_id": "A3MB_kpconv_RAW_REPEAT_B150_s3",
+  "experiment": "A3MB",
+  "entrypoint": "a3mb_train.py",
+  "backbone": "kpconv",
+  "method": "RAW_REPEAT",
+  "seed": 20260913,
+  "project_root": "..",
+  "splits": "manifest/splits_v2.json",
+  "source_manifest": "manifest/source_scans_v2.csv",
+  "pseudo_label_manifest": "a3_assets/original/pseudo_label_manifest_v3.csv",
+  "coordinate_scale_manifest": "manifest/coordinate_scales_v2.csv",
+  "candidate_manifest": null,
+  "a3_protocol": "configs/a3_pointnetpp_mb_v1.json",
+  "quality_config": "configs/quality_v1.yaml",
+  "output_dir": "runs/a3mb_v1/A3MB_kpconv_RAW_REPEAT_B150_s3",
+  "budget_B": 150,
+  "max_updates": 1330,
+  "num_points": 4096,
+  "batch_size": 8,
+  "num_workers": 0,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "lr_min_ratio": 0.01,
+  "eval_interval": 100,
+  "checkpoint_interval": 100,
+  "dev_crops_per_scan": 4,
+  "cache_size": 4,
+  "device": "cuda",
+  "use_normals": true,
+  "amp": true,
+  "deterministic": true,
+  "verify_hashes": true,
+  "model_profile": "formal",
+  "model": {
+    "backbone": "kpconv",
+    "num_classes": 2,
+    "use_normals": true
+  },
+  "output_contract": {
+    "required_artifacts": [
+      "resolved_config.json",
+      "selection_manifest.csv",
+      "per_source_exposure.csv",
+      "history.json",
+      "metrics.json",
+      "provenance.json",
+      "checkpoint_best.pt",
+      "checkpoint_latest.pt"
+    ]
+  }
+}

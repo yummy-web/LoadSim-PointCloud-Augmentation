@@ -1,0 +1,30 @@
+# 质量筛选规则 v1 (冻结)
+# 生成时间: 2026-09-09
+# 用途: revision_v2 所有质量评估统一使用此配置
+
+version: v1
+rule: Q-only
+formula: 'Q = 0.40*F + 0.35*P + 0.25*D'
+
+threshold:
+  Q: 0.55
+
+components:
+  F: # 保真度 (Fidelity)
+    weight: 0.40
+    metrics: ['chamfer_distance', 'hausdorff_distance', 'volume_change', 'feature_similarity']
+  P: # 物理可信度 (Physics)
+    weight: 0.35
+    metrics: ['repose_angle', 'height_base_ratio', 'surface_continuity']
+  D: # 多样性贡献 (Diversity)
+    weight: 0.25
+    metrics: ['shape_descriptor_deviation']
+
+note: |
+  论文与代码统一为单Q阈值 (Q >= 0.55)。
+  F/P/D 分量仍计算并记录以支持分析和离线敏感性研究，但不作为硬性筛选门槛。
+  此决策基于 step2_quality.py 代码审计：实际 passed 逻辑仅依赖 total >= 0.55。
+
+implementation_file: step2_quality.py
+implementation_line: 416
+actual_logic: "r['passed'] = total >= self.THRESHOLDS['total']"

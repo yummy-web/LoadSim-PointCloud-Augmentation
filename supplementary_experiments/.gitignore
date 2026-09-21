@@ -1,0 +1,42 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# ---- Data & artifacts (NEVER commit) ----
+# raw / processed point clouds and labels
+*.ply
+*.pcd
+*.bin
+*.las
+*.laz
+*.npz
+*.npy
+*.h5
+*.hdf5
+# manifests / assets referenced by configs (local data layout)
+manifest/
+a3_assets/
+data/
+datasets/
+sequences/
+# training outputs / checkpoints / logs
+runs/
+outputs/
+kitti_outputs/
+*.pth
+*.ckpt
+*.pt
+*.log
+*.tar
+*.tar.gz
+*.zip
+
+# ---- Editors / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

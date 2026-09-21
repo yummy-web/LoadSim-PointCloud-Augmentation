@@ -1,0 +1,132 @@
+# V3D (ISPRS Vaihingen 3D) executable contract for the cross-domain budget-curve
+# experiment. Mirrors kitti_v1.yaml structure; runtime training/model values come
+# from configs/V3D_*.json. Dataset here is prepared BLOCKS (see v3d_prepare.py),
+# not raw frames: each "frame" is one XY-tiled block .npz. The 9->2 binary
+# ground/non-ground mapping is the documented proxy task (VERIFY class IDs via
+# `python v3d_prepare.py --inspect` before trusting it).
+version: v3d-cross-domain-v1
+experiment: V3D_Vaihingen3D
+
+dataset:
+  name: Vaihingen3D
+  root: ../v3d_experiment            # contains manifest.json + blocks/
+  task: ground_nonground_binary
+  split:
+    mode: spatial_band_x             # contiguous X-bands; counts are dynamic
+  num_points: 4096                   # must be <= points_per_block in manifest
+  features: [x, y, z]
+  label_mapping:
+    version: v3d-impervious-surface-v2
+    source: ISPRS Vaihingen 3D 9-class -> binary impervious-surface/other
+    output_values: [0, 1, 255]
+  ground_semantic_ids: [2]           # Impervious surfaces ONLY (flat load-bearing surface)
+  ignore_semantic_ids: []            # V3D has no explicit ignore class
+  valid_raw_semantic_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  non_ground_rule: all_other_valid_raw_semantic_ids
+
+preprocessing:
+  reject_zero_xyz: true
+  ignore_label_value: 255
+  exclude_ignore_before_sampling: true
+  training_label_values: [0, 1]
+  min_valid_points: 100
+  sampling: stratified_without_replacement_when_possible
+  min_ground_ratio: 0.10
+  center_xyz: true
+  eval_sampling_seed: 20260900
+
+methods:
+  BASELINE:
+    train_transform: none
+    applies_to: train_only
+    online_augmentation: false
+  TRADITIONAL:
+    train_transform: traditional
+    applies_to: train_only
+    online_augmentation: false
+    scale_range: [0.85, 1.15]
+    rotate_z_degrees: [-180.0, 180.0]
+    jitter_sigma: 0.02
+    jitter_clip: 0.05
+    flip_x_probability: 0.50
+  LOADSIM:
+    train_transform: loadsim
+    applies_to: train_only
+    online_augmentation: false
+    class_mask:
+      source: binary_ground_label
+      value: 1
+      strict: true
+    n_ops: [2, 4]
+    front_alpha: [0.15, 0.25]
+    bucket_width_m: [0.8, 1.5]
+    collapse_dz_m: [0.03, 0.10]
+    collapse_dx_m: [0.02, 0.06]
+    surface_noise:
+      enabled: true
+      axis: z
+      sigma_m: 0.02
+      clip_m: 0.05
+    smoothing:
+      enabled: false
+    component_gate:                  # full LoadSim: every physical component on
+      directional_removal: true
+      lateral_collapse: true
+      surface_noise: true
+  # LOADSIM_GEOM = out-of-domain geometric stress test (reviewer R3-6). On a flat
+  # rigid impervious surface, directional material removal and lateral collapse
+  # have NO physical meaning, so they are disabled; only the non-semantic vertical
+  # surface_noise is kept. This is the on/off component contrast against LOADSIM.
+  LOADSIM_GEOM:
+    train_transform: loadsim
+    applies_to: train_only
+    online_augmentation: false
+    class_mask:
+      source: binary_ground_label
+      value: 1
+      strict: true
+    n_ops: [2, 4]
+    front_alpha: [0.15, 0.25]
+    bucket_width_m: [0.8, 1.5]
+    collapse_dz_m: [0.03, 0.10]
+    collapse_dx_m: [0.02, 0.06]
+    surface_noise:
+      enabled: true
+      axis: z
+      sigma_m: 0.02
+      clip_m: 0.05
+    smoothing:
+      enabled: false
+    component_gate:                  # geometric-only: disable the semantic components
+      directional_removal: false
+      lateral_collapse: false
+      surface_noise: true
+
+training_runtime:
+  source: run_json
+  loss: weighted_cross_entropy
+  class_weights: [0.5, 0.5]
+  amp: true
+  num_workers: 0
+  checkpoint_every_updates: 100
+  deterministic_algorithms: true
+  baseline_online_augmentation: false
+
+evaluation:
+  validation_source: raw_frames
+  test_source: raw_frames
+  augmentation: none
+  selection_metric: mIoU
+  per_frame_block_metrics: true
+  points_per_block: 4096
+  blocks_per_frame: 1
+
+debug:
+  real_frames_only: true
+  train_frames: 2
+  val_frames: 1
+  test_frames: 1
+  epochs: 1
+  batch_size: 2
+  max_updates: 1
+  checkpoint_every_updates: 1

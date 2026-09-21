@@ -1,0 +1,46 @@
+# 伪标签可执行规则配置 v2（冻结；文件名保留兼容）
+version: v2
+frozen: true
+
+conditions:
+  front_region:
+    method: percentile_threshold
+    axis_policy: derived_per_sample_from_frozen_normals
+    sign_policy: positive_coordinate
+    percentile: 70
+    note: "按每样本冻结PLY法向水平分量均值选轴；X/Y相等时选Y"
+  local_slope:
+    method: frozen_ply_normal
+    orientation: flip_entire_normal_when_nz_negative
+    normalization: none
+    angle_definition: 90_minus_arccos_abs_nz_degrees
+    angle_range: [20, 40]
+    note: "忠实复现step3；不做PCA回退或额外单位化"
+  local_convexity:
+    method: spherical_max
+    radius: 0.5
+    radius_unit: meter
+    criterion: z_max
+    note: "球形邻域内Z值最大，使用step3的1e-6容差"
+
+combination: AND
+coordinate_system:
+  up_axis: z
+  scale_policy: canonical_per_sample_raw_to_meter
+adaptive_relaxation:
+  # 方案A（2026-09-11）：恢复step3_labels.py:234-247的预注册回退。
+  # 本数据集 strict(front&slope&convex) 结构性恒空，故实际回退到 front&slope。
+  # 论文据实改述：front∩slope 为主判据，convex 为在本数据未触发的加严项。
+  enabled: true
+  ratio_min: 0.01
+  fallback_min: 0.005
+  widen_slope_degrees: [10, 55]
+  overcap: 0.40
+  trim_percentile: 50
+output:
+  format: npz
+  dtype: uint8
+  labels:
+    scooping_region: 1
+    background: 0
+    ignore: 255

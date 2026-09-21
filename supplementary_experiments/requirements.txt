@@ -1,0 +1,23 @@
+# Supplementary experiments — dependencies
+# Install: pip install -r requirements.txt
+
+# Core numerics
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Point-cloud I/O
+open3d>=0.17.0
+
+# Deep learning (install the CUDA build matching your GPU; see note below)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Config & visualization
+PyYAML>=6.0
+matplotlib>=3.7.0
+
+# Optional utilities
+scikit-learn>=1.3.0
+
+# GPU note: install a CUDA-matched PyTorch build, e.g.
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121

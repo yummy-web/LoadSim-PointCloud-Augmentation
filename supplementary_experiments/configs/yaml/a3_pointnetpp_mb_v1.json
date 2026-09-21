@@ -1,0 +1,40 @@
+{
+  "schema_version": "a3-protocol-v1",
+  "frozen": true,
+  "experiment": "A3_PointNetPP_matched_budget",
+  "M": 9,
+  "train_parent_scans": [
+    "001", "003", "004", "005", "DJI_1", "DJI_2", "DJI_4", "DJI_5", "DJI_6"
+  ],
+  "dev_parent_scans": ["DJI_8", "DJI_9"],
+  "methods": ["RAW_REPEAT", "TRAD", "LOADSIM"],
+  "budgets_B": [11, 25, 50, 75, 100, 150],
+  "method_budget_grid": {
+    "RAW_REPEAT": [11, 25, 50, 75, 100, 150],
+    "TRAD": [11, 50, 150],
+    "LOADSIM": [11, 25, 50, 75, 100, 150]
+  },
+  "seeds": [20260911, 20260912, 20260913],
+  "max_updates_U": 1330,
+  "batch_size": 8,
+  "num_points": 4096,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "lr_min_ratio": 0.01,
+  "amp": true,
+  "device_type": "cuda",
+  "eval_interval": 100,
+  "checkpoint_interval": 100,
+  "dev_crops_per_scan": 4,
+  "cache_size": 4,
+  "num_workers": 0,
+  "num_classes": 2,
+  "use_normals": true,
+  "deterministic": true,
+  "verify_hashes": true,
+  "model_profile": "formal",
+  "ignore_index": 255,
+  "dev_policy": "frozen original DEV scans only; no augmentation",
+  "selection_metric": "DEV_mIoU",
+  "reference_labels_for_training_or_selection": false
+}

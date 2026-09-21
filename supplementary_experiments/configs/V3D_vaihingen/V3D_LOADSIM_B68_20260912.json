@@ -1,0 +1,45 @@
+{
+ "schema_version": "lsda-revision-v2-run-v2",
+ "run_id": "V3D_LOADSIM_B68_20260912",
+ "experiment": "V3D",
+ "entrypoint": "v3d_budget_train.py",
+ "method": "LOADSIM",
+ "seed": 20260912,
+ "paths": {
+  "v3d_root": "../v3d_experiment",
+  "v3d_config": "configs/v3d_v1.yaml"
+ },
+ "protocol": {
+  "budget_B": 68,
+  "max_updates_U": 4000,
+  "num_points": 4096
+ },
+ "training": {
+  "epochs": 50,
+  "batch_size": 8,
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "lr_scheduler": "CosineAnnealingLR",
+  "lr_step_size": 15,
+  "lr_gamma": 0.5,
+  "device": "cuda"
+ },
+ "model": {
+  "backbone": "PointNet++",
+  "num_classes": 2,
+  "use_normals": false
+ },
+ "output_contract": {
+  "required_artifacts": [
+   "status.json",
+   "resolved_config.json",
+   "split_manifest.json",
+   "history.json",
+   "metrics.json",
+   "provenance.json",
+   "per_frame_block_metrics.jsonl",
+   "checkpoints/best.pt"
+  ]
+ }
+}
